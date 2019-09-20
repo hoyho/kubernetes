@@ -219,6 +219,8 @@ func (rc *reconciler) reconcile() {
 				}
 				klog.V(5).Infof(volumeToAttach.GenerateMsgDetailed("Starting operationExecutor.AttachVolume", ""))
 				err := rc.operationExecutor.AttachVolume(volumeToAttach, rc.actualStateOfWorld)
+				volMounted2, devicePath2, err2 := rc.actualStateOfWorld.PodExistsInVolume(volumeToMount.PodName, volumeToMount.VolumeName)
+				klog.V(5).Infof("## ** result: PodName:%s,VolumeName:%s, volMounted:%v,devicePath:%s,err:%v",volumeToMount.PodName, volumeToMount.VolumeName,volMounted2, devicePath2, err2)
 				if err != nil &&
 					!nestedpendingoperations.IsAlreadyExists(err) &&
 					!exponentialbackoff.IsExponentialBackoff(err) {
@@ -239,11 +241,16 @@ func (rc *reconciler) reconcile() {
 				remountingLogStr = "Volume is already mounted to pod, but remount was requested."
 			}
 			klog.V(4).Infof(volumeToMount.GenerateMsgDetailed("Starting operationExecutor.MountVolume", remountingLogStr))
+			klog.V(5).Infof("## before MountVolume ## waitForAttachTimeout:%v,VolumeToMount:%s,isRemount:%v",rc.waitForAttachTimeout,volumeToMount.VolumeName,isRemount)
 			err := rc.operationExecutor.MountVolume(
 				rc.waitForAttachTimeout,
 				volumeToMount.VolumeToMount,
 				rc.actualStateOfWorld,
 				isRemount)
+			
+			
+			klog.V(5).Infof("## after MountVolume ## err:%v",err)
+			
 			if err != nil &&
 				!nestedpendingoperations.IsAlreadyExists(err) &&
 				!exponentialbackoff.IsExponentialBackoff(err) {
