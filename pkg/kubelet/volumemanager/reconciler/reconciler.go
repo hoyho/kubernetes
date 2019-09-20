@@ -185,8 +185,10 @@ func (rc *reconciler) reconcile() {
 
 	// Ensure volumes that should be attached/mounted are attached/mounted.
 	for _, volumeToMount := range rc.desiredStateOfWorld.GetVolumesToMount() {
+
 		volMounted, devicePath, err := rc.actualStateOfWorld.PodExistsInVolume(volumeToMount.PodName, volumeToMount.VolumeName)
 		volumeToMount.DevicePath = devicePath
+		klog.V(5).Infof("### attached/mounted# ## PodName:%s,VolumeName:%s, volMounted:%v,devicePath:%s,err:%v",volumeToMount.PodName, volumeToMount.VolumeName,volMounted, devicePath, err)
 		if cache.IsVolumeNotAttachedError(err) {
 			if rc.controllerAttachDetachEnabled || !volumeToMount.PluginIsAttachable {
 				// Volume is not attached (or doesn't implement attacher), kubelet attach is disabled, wait
@@ -275,6 +277,9 @@ func (rc *reconciler) reconcile() {
 
 	// Ensure devices that should be detached/unmounted are detached/unmounted.
 	for _, attachedVolume := range rc.actualStateOfWorld.GetUnmountedVolumes() {
+		
+		klog.V(5).Infof("#detached/unmounted  attachedVolume:%v",attachedVolume)
+
 		// Check IsOperationPending to avoid marking a volume as detached if it's in the process of mounting.
 		if !rc.desiredStateOfWorld.VolumeExists(attachedVolume.VolumeName) &&
 			!rc.operationExecutor.IsOperationPending(attachedVolume.VolumeName, nestedpendingoperations.EmptyUniquePodName) {
