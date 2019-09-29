@@ -191,6 +191,8 @@ func (rc *reconciler) reconcile() {
 		volumeToMount.DevicePath = devicePath
 		klog.V(5).Infof("## attached/mounted# ## PodName:%s,VolumeName:%s, volMounted:%v,devicePath:%s,err:%v",volumeToMount.PodName, volumeToMount.VolumeName,volMounted, devicePath, err)
 		if cache.IsVolumeNotAttachedError(err) {
+			klog.V(5).Infof("## IsVolumeNotAttachedError# ## PodName:%s,VolumeName:%s, volMounted:%v,devicePath:%s,err:%v",volumeToMount.PodName, volumeToMount.VolumeName,volMounted, devicePath, err)
+			klog.V(5).Infof("## rc.controllerAttachDetachEnabled = %v, volumeToMount.PluginIsAttachable=%v, ##   PodName:%s,VolumeName:%s, volMounted:%v,devicePath:%s,err:%v",rc.controllerAttachDetachEnabled,volumeToMount.PluginIsAttachable, volumeToMount.PodName, volumeToMount.VolumeName,volMounted, devicePath, err)
 			if rc.controllerAttachDetachEnabled || !volumeToMount.PluginIsAttachable {
 				// Volume is not attached (or doesn't implement attacher), kubelet attach is disabled, wait
 				// for controller to finish attaching volume.
@@ -233,6 +235,9 @@ func (rc *reconciler) reconcile() {
 				}
 			}
 		} else if !volMounted || cache.IsRemountRequiredError(err) {
+
+			klog.V(5).Infof("## volMounted=%v cache.IsRemountRequiredError(err)=%v # ## PodName:%s,VolumeName:%s, volMounted:%v,devicePath:%s,err:%v",volMounted, cache.IsRemountRequiredError(err),volumeToMount.PodName, volumeToMount.VolumeName,volMounted, devicePath, err)
+
 			// Volume is not mounted, or is already mounted, but requires remounting
 			remountingLogStr := ""
 			isRemount := cache.IsRemountRequiredError(err)
