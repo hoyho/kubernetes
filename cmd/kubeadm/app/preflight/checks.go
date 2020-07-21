@@ -688,25 +688,30 @@ func (ExternalEtcdVersionCheck) Name() string {
 // TODO: Use the official etcd Golang client for this instead?
 func (evc ExternalEtcdVersionCheck) Check() (warnings, errorList []error) {
 	klog.V(1).Infoln("validating the external etcd version")
+	klog.V(1).Infof("ExternalEtcdVersionCheck:%v",evc)
 
 	// Return quickly if the user isn't using external etcd
 	if evc.Etcd.External.Endpoints == nil {
 		return nil, nil
 	}
+	klog.V(1).Infof("evc.Etcd.External.Endpoints:%v",evc.Etcd.External.Endpoints)
 
 	var config *tls.Config
 	var err error
 	if config, err = evc.configRootCAs(config); err != nil {
+		klog.V(1).Infof("config:%v, err:%v",config,err)
 		errorList = append(errorList, err)
 		return nil, errorList
 	}
 	if config, err = evc.configCertAndKey(config); err != nil {
+		klog.V(1).Infof("config:%v, err:%v",config,err)
 		errorList = append(errorList, err)
 		return nil, errorList
 	}
 
 	client := evc.getHTTPClient(config)
 	for _, endpoint := range evc.Etcd.External.Endpoints {
+		klog.V(1).Infof("evc.Etcd.External:%v, err:%v",evc.Etcd.External,err)
 		if _, err := url.Parse(endpoint); err != nil {
 			errorList = append(errorList, errors.Wrapf(err, "failed to parse external etcd endpoint %s", endpoint))
 			continue
@@ -721,6 +726,7 @@ func (evc ExternalEtcdVersionCheck) Check() (warnings, errorList []error) {
 			versionURL = tmpVersionURL
 		}
 		if err = getEtcdVersionResponse(client, versionURL, &resp); err != nil {
+			klog.V(1).Infof("getEtcdVersionResponse:%v, err:%v",resp,err)
 			errorList = append(errorList, err)
 			continue
 		}
@@ -800,6 +806,7 @@ func getEtcdVersionResponse(client *http.Client, url string, target interface{})
 		stopRetry, err = func() (stopRetry bool, err error) {
 			r, err := client.Get(url)
 			if err != nil {
+				klog.V(1).Infof("lient.Get(url):%v, err:%v",url,err)
 				loopCount--
 				return false, err
 			}
@@ -807,8 +814,10 @@ func getEtcdVersionResponse(client *http.Client, url string, target interface{})
 
 			if r != nil && r.StatusCode >= 500 && r.StatusCode <= 599 {
 				loopCount--
+				klog.V(1).Infof("StatusCode url:%v, r:%v",url,r)
 				return false, errors.Errorf("server responded with non-successful status: %s", r.Status)
 			}
+			klog.V(1).Infof("target:%v,",target)
 			return true, json.NewDecoder(r.Body).Decode(target)
 
 		}()
