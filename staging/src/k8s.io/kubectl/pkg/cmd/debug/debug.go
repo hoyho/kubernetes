@@ -19,6 +19,7 @@ package debug
 import (
 	"context"
 	"fmt"
+	"strings"
 	"time"
 
 	"github.com/docker/distribution/reference"
@@ -123,7 +124,7 @@ func addDebugFlags(cmd *cobra.Command, opt *DebugOptions) {
 	cmd.Flags().StringToString("env", nil, i18n.T("Environment variables to set in the container."))
 	cmd.Flags().StringVar(&opt.Image, "image", opt.Image, i18n.T("Container image to use for debug container."))
 	cmd.MarkFlagRequired("image")
-	cmd.Flags().String("image-pull-policy", string(corev1.PullIfNotPresent), i18n.T("The image pull policy for the container."))
+	cmd.Flags().String("image-pull-policy", "", i18n.T("The image pull policy for the container."))
 	cmd.Flags().BoolVarP(&opt.Interactive, "stdin", "i", opt.Interactive, i18n.T("Keep stdin open on the container(s) in the pod, even if nothing is attached."))
 	cmd.Flags().BoolVar(&opt.Quiet, "quiet", opt.Quiet, i18n.T("If true, suppress prompt messages."))
 	cmd.Flags().StringVar(&opt.Target, "target", "", i18n.T("Target processes in this container name."))
@@ -135,7 +136,16 @@ func (o *DebugOptions) Complete(f cmdutil.Factory, cmd *cobra.Command, args []st
 	var err error
 
 	o.builder = f.NewBuilder()
-	o.PullPolicy = corev1.PullPolicy(cmdutil.GetFlagString(cmd, "image-pull-policy"))
+	var pullPolicy = corev1.PullPolicy(cmdutil.GetFlagString(cmd, "image-pull-policy"))
+	if len(pullPolicy)==0{
+		if strings.HasSuffix(o.Image,"latest"){
+			pullPolicy = corev1.PullAlways
+		}else {
+			pullPolicy =  corev1.PullIfNotPresent
+		}
+	}
+
+	o.PullPolicy = pullPolicy
 
 	// Arguments
 	argsLen := cmd.ArgsLenAtDash()
